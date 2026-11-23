@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class AuthResponse {
     private String token;
     private String tokenType;
+    private Long expiresIn; // Token / session validity in milliseconds
     private UserDTO user;
 }
 

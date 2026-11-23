@@ -54,6 +54,7 @@ public class AuthService {
         return AuthResponse.builder()
                 .token(token)
                 .tokenType("Bearer")
+                .expiresIn(tokenProvider.getExpiration())
                 .user(toUserDTO(user))
                 .build();
     }
@@ -102,6 +103,7 @@ public class AuthService {
         return AuthResponse.builder()
                 .token(token)
                 .tokenType("Bearer")
+                .expiresIn(tokenProvider.getExpiration())
                 .user(toUserDTO(user))
                 .build();
     }

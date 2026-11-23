@@ -22,6 +22,9 @@ public class EmailService {
     @Value("${spring.mail.username:bandishivakumar880@gmail.com}")
     private String fromEmail;
 
+    @Value("${app.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
+
     // In-memory debug storage for latest dispatched OTPs (accessible during assessment / demo testing)
     private final Map<String, String> latestOtps = new ConcurrentHashMap<>();
 
@@ -36,6 +39,7 @@ public class EmailService {
         String accessType = canMakeOperations ? "Full Operations (Vehicle Intake, Editing & Workflow)" : "Read-Only (View & Search Only)";
 
         String subject = "Welcome to OMT Lite - Your Account Credentials";
+        String loginUrl = frontendUrl + "/mfa/login";
         String body = String.format("""
             Hello %s,
 
@@ -43,7 +47,7 @@ public class EmailService {
 
             Here are your login credentials:
             --------------------------------------------------
-            Portal URL:  http://localhost:5173/mfa/login
+            Portal URL:  %s
             Username:    %s
             Password:    %s
             Role:        %s
@@ -55,7 +59,7 @@ public class EmailService {
             Regards,
             OMT Lite Team
             Yard & Vehicle Management System
-            """, name, toEmail, password, role, accessType);
+            """, name, loginUrl, toEmail, password, role, accessType);
 
         sendEmail(toEmail, subject, body);
     }

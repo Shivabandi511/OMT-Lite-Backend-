@@ -2,6 +2,8 @@ package com.OMT.Backend.security;
 
 import com.OMT.Backend.model.User;
 import com.OMT.Backend.repository.UserRepository;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,20 +37,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String token = getJwtFromRequest(request);
 
-        if (StringUtils.hasText(token) && tokenProvider.validateToken(token)) {
-            String email = tokenProvider.getEmailFromToken(token);
-            Optional<User> userOptional = userRepository.findByEmail(email);
+        if (StringUtils.hasText(token)) {
+            try {
+                if (tokenProvider.validateToken(token)) {
+                    String email = tokenProvider.getEmailFromToken(token);
+                    Optional<User> userOptional = userRepository.findByEmail(email);
 
-            if (userOptional.isPresent() && userOptional.get().isActive()) {
-                User user = userOptional.get();
-                SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
+                    if (userOptional.isPresent() && userOptional.get().isActive()) {
+                        User user = userOptional.get();
+                        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        user, null, Collections.singletonList(authority)
-                );
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                user, null, Collections.singletonList(authority)
+                        );
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
+                }
+            } catch (ExpiredJwtException ex) {
+                logger.warn("JWT token expired: " + ex.getMessage());
+                request.setAttribute("jwt_expired", true);
+            } catch (JwtException | IllegalArgumentException ex) {
+                logger.warn("Invalid JWT token: " + ex.getMessage());
+                request.setAttribute("jwt_invalid", true);
             }
         }
 
