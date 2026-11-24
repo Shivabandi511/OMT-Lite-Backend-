@@ -58,7 +58,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public authentication endpoints
-                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/login-mfa-init", "/api/auth/login-mfa-verify", "/api/auth/forgot-password", "/api/auth/verify-otp", "/api/auth/reset-password").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register", "/api/auth/login-mfa-init", "/api/auth/login-mfa-verify", "/api/auth/forgot-password", "/api/auth/verify-otp", "/api/auth/reset-password").permitAll()
                 // Public OpenAPI / Swagger endpoints
                 .requestMatchers(
                     "/v3/api-docs/**",

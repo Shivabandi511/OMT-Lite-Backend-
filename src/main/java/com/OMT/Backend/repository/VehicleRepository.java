@@ -42,6 +42,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
     long countByStatus(VehicleStatus status);
 
+    long countByRoutingDecision(RoutingDecision routingDecision);
+
     @Query("SELECT MAX(v.id) FROM Vehicle v")
     Long findMaxId();
 }

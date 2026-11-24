@@ -17,6 +17,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 public class AuthService {
@@ -150,8 +151,9 @@ public class AuthService {
                 .orElseThrow(() -> new BadRequestException("User not found"));
 
         validateOtp(user, request.getOtp());
+        validatePasswordStrength(request.getNewPassword());
 
-        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword().trim()));
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         user.setOtpCode(null);
         user.setOtpExpiry(null);
         userRepository.save(user);
@@ -224,16 +226,75 @@ public class AuthService {
             throw new BadCredentialsException("Current password is incorrect");
         }
 
-        if (newPassword == null || newPassword.trim().length() < 8) {
-            throw new BadRequestException("Password must be at least 8 characters long");
-        }
+        validatePasswordStrength(newPassword);
 
-        freshUser.setPasswordHash(passwordEncoder.encode(newPassword.trim()));
+        freshUser.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(freshUser);
 
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Password changed successfully");
         return response;
+    }
+
+    private static final java.util.Set<String> COMMON_WEAK_PASSWORDS = java.util.Set.of(
+        "password", "password123", "password123!", "password123@", "admin@123",
+        "admin123", "admin1234", "admin1234!", "12345678", "123456789",
+        "12345678a!", "qwerty123", "qwerty123!", "welcome123!", "changeme123!"
+    );
+
+    public void validatePasswordStrength(String password) {
+        if (password == null || password.isEmpty()) {
+            throw new BadRequestException("Password is required");
+        }
+        if (password.contains(" ") || Pattern.compile("\\s").matcher(password).find()) {
+            throw new BadRequestException("Password cannot contain spaces or whitespace");
+        }
+        if (password.length() < 8) {
+            throw new BadRequestException("Password must be at least 8 characters long");
+        }
+        if (password.length() > 64) {
+            throw new BadRequestException("Password must not exceed 64 characters");
+        }
+        if (!Pattern.compile("[A-Z]").matcher(password).find()) {
+            throw new BadRequestException("Password must contain at least one uppercase letter (A-Z)");
+        }
+        if (!Pattern.compile("[a-z]").matcher(password).find()) {
+            throw new BadRequestException("Password must contain at least one lowercase letter (a-z)");
+        }
+        if (!Pattern.compile("[0-9]").matcher(password).find()) {
+            throw new BadRequestException("Password must contain at least one number (0-9)");
+        }
+        if (!Pattern.compile("[@$!%*?&#^()_+\\-=\\[\\]{};':\",.<>|/\\\\~`]").matcher(password).find()) {
+            throw new BadRequestException("Password must contain at least one special character (@$!%*?&# etc.)");
+        }
+        if (COMMON_WEAK_PASSWORDS.contains(password.toLowerCase().trim())) {
+            throw new BadRequestException("Password is too common or easily guessed. Please choose a stronger password.");
+        }
+    }
+
+    @Transactional
+    public AuthResponse register(RegisterRequest request) {
+        String email = request.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmail(email)) {
+            throw new BadRequestException("A user with this email address already exists");
+        }
+        validatePasswordStrength(request.getPassword());
+        User user = User.builder()
+                .name(request.getName().trim())
+                .email(email)
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .role(com.OMT.Backend.model.Role.STAFF)
+                .active(true)
+                .canMakeOperations(true)
+                .build();
+        userRepository.save(user);
+        String token = tokenProvider.generateToken(user.getEmail(), user.getRole().name());
+        return AuthResponse.builder()
+                .token(token)
+                .tokenType("Bearer")
+                .expiresIn(tokenProvider.getExpiration())
+                .user(toUserDTO(user))
+                .build();
     }
 
     public UserDTO toUserDTO(User user) {

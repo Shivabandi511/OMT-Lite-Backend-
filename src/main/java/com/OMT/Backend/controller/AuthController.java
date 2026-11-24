@@ -24,6 +24,12 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        AuthResponse response = authService.register(request);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/login-mfa-init")
     public ResponseEntity<Map<String, Object>> loginMfaInit(@Valid @RequestBody LoginRequest request) {
         Map<String, Object> response = authService.initiateLoginMfa(request);

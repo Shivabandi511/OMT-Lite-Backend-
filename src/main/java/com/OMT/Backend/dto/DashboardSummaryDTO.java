@@ -19,5 +19,9 @@ public class DashboardSummaryDTO {
     private long vehiclesCompleted;
     private long vehiclesDismantle;
     private long vehiclesKeepWhole;
+    private long totalParts;
+    private long extractedParts;
+    private long pendingParts;
+    private long extractableParts;
 }
 

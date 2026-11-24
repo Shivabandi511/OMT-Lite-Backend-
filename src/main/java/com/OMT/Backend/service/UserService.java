@@ -48,9 +48,13 @@ public class UserService {
             throw new ConflictException("A user account with email '" + email + "' already exists.");
         }
 
-        String plainPassword = (request.getPassword() != null && !request.getPassword().trim().isEmpty())
-                ? request.getPassword().trim()
-                : generateRandomPassword();
+        String plainPassword;
+        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            authService.validatePasswordStrength(request.getPassword());
+            plainPassword = request.getPassword();
+        } else {
+            plainPassword = generateRandomPassword();
+        }
 
         User user = User.builder()
                 .name(request.getName().trim())
